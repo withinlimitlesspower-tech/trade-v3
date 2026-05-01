@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek Trading Terminal · Chat</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ---------- RESET & BASE ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b0e14;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #e6edf3;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        /* ---------- TERMINAL CARD ---------- */
+        .terminal {
+            max-width: 860px;
+            width: 100%;
+            height: 90vh;
+            max-height: 820px;
+            background: #131820;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(66, 153, 225, 0.12);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(2px);
+            border: 1px solid #1e293b;
+        }
+
+        /* ---------- HEADER ---------- */
+        .terminal-header {
+            padding: 18px 24px;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .terminal-header .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .brand i {
+            color: #3b82f6;
+            font-size: 1.4rem;
+        }
+
+        .brand span {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-badge {
+            background: #1e293b;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #94a3b8;
+            border: 1px solid #2d3a4e;
+            letter-spacing: 0.3px;
+        }
+
+        .header-badge i {
+            margin-right: 6px;
+            color: #22c55e;
+        }
+
+        /* ---------- CHAT MESSAGES ---------- */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+            background: #0f172a radial-gradient(circle at 20% 30%, #1a2332 0%, #0b0e14 90%);
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 10px;
+        }
+
+        /* ---------- MESSAGE BUBBLES ---------- */
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 88%;
+            animation: msgFadeIn 0.25s ease-out;
+        }
+
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            background: #1e293b;
+            border: 1px solid #2d3a4e;
+        }
+
+        .message.user .avatar {
+            background: #2563eb;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .message.bot .avatar {
+            background: #1e293b;
+            color: #94a3b8;
+        }
+
+        .message .bubble {
+            background: #1e293b;
+            padding: 12px 18px;
+            border-radius: 20px;
+            border-bottom-left-radius: 6px;
+            font-size: 0.9rem;
+            line-height: 1.55;
+            color: #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid #2a3a4e;
+            word-break: break-word;
+        }
+
+        .message.user .bubble {
+            background: #1d4ed8;
+            border-bottom-right-radius: 6px;
+            border-bottom-left-radius: 20px;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .message .bubble .timestamp {
+            display: block;
+            font-size: 0.6rem;
+            color: #64748b;
+            margin-top: 6px;
+            text-align: right;
+            letter-spacing: 0.2px;
+        }
+
+        /* ---------- SIGNAL CARD (inside bot bubble) ---------- */
+        .signal-card {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin: 8px 0 4px;
+            border-left: 4px solid #22c55e;
+            box-shadow: inset 0 0 0 1px #1e293b;
+        }
+
+        .signal-card .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .signal-card .signal-header .pair {
+            color: #f1f5f9;
+        }
+
+        .signal-card .signal-header .action {
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .action.buy {
+            background: #166534;
+            color: #86efac;
+        }
+
+        .action.sell {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .signal-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .signal-details span {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #1e293b;
+            padding-bottom: 3px;
+        }
+
+        .signal-details .value {
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        /* ---------- TYPING INDICATOR ---------- */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 0 6px 12px;
+            align-self: flex-start;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-indicator .dot-bounce {
+            display: flex;
+            gap: 5px;
+            background: #1e293b;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #2d3a4e;
+        }
+
+        .typing-indicator .dot-bounce span {
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.2s infinite ease-in-out;
+        }
+
+        .typing-indicator .dot-bounce span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .dot-bounce span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* ---------- QUICK ACTIONS ---------- */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            padding: 8px 24px 4px;
+            background: #0f172a;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            background: #1e293b;
+            border: 1px solid #2d3a4e;
+            color: #cbd5e1;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .quick-btn i {
+            font-size: 0.9rem;
+        }
+
+        .quick-btn:hover {
+            background: #2d3a4e;
+            border-color: #3b82f6;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .quick-btn:active {
+            transform: scale(0.96);
+        }
+
+        .quick-btn.btc i { color: #f7931a; }
+        .quick-btn.eth i { color: #8b8cf7; }
+        .quick-btn.scan i { color: #22c55e; }
+
+        /* ---------- INPUT AREA ---------- */
+        .chat-input-area {
+            padding: 12px 24px 20px;
+            background: #0f172a;
+            border-top: 1px solid #1e293b;
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #1e293b;
+            border-radius: 60px;
+            padding: 4px 4px 4px 20px;
+            border: 1px solid #2d3a4e;
+            transition: border 0.2s;
+        }
+
+        .input-row:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .input-row input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+            padding: 12px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .input-row input::placeholder {
+            color: #475569;
+            font-weight: 400;
+        }
+
+        .input-row button {
+            background: #2563eb;
+            border: none;
+            color: white;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .input-row button:hover {
+            background: #3b82f6;
+            transform: scale(1.04);
+        }
+
+        .input-row button:active {
+            transform: scale(0.92);
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .terminal { height: 96vh; border-radius: 20px; }
+            .terminal-header { padding: 14px 18px; flex-wrap: wrap; gap: 8px; }
+            .chat-messages { padding: 16px 16px 8px; }
+            .message { max-width: 96%; }
+            .quick-actions { padding: 6px 16px 2px; gap: 6px; }
+            .quick-btn { font-size: 0.7rem; padding: 6px 14px; }
+            .chat-input-area { padding: 10px 16px 16px; }
+            .input-row { padding-left: 16px; }
+        }
+
+        /* ---------- UTILITY ---------- */
+        .text-muted { color: #64748b; }
+        .mt-1 { margin-top: 4px; }
+        .mb-1 { margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="terminal" role="main" aria-label="DeepSeek Trading Chat Terminal">
+        <!-- HEADER -->
+        <header class="terminal-header">
+            <div class="brand">
+                <i class="fas fa-robot"></i>
+                <span>DeepSeek Terminal</span>
+            </div>
+            <div class="header-badge">
+                <i class="fas fa-circle"></i> AI · v4
+            </div>
+        </header>
+
+        <!-- CHAT MESSAGES -->
+        <section class="chat-messages" id="chatMessages" aria-live="polite">
+            <!-- Welcome message (bot) -->
+            <div class="message bot">
+                <div class="avatar"><i class="fas fa-microchip"></i></div>
+                <div class="bubble">
+                    <i class="fas fa-wave-square" style="margin-right: 6px; color: #3b82f6;"></i>
+                    Terminal ready. Ask me about BTC, ETH, or scan the markets.
+                    <span class="timestamp">just now</span>
+                </div>
+            </div>
+
+            <!-- Example signal card (static demo) -->
+            <div class="message bot">
+                <div class="avatar"><i class="fas fa-chart-line"></i></div>
+                <div class="bubble">
+                    <strong>Signal snapshot</strong>
+                    <div class="signal-card">
+                        <div class="signal-header">
+                            <span class="pair"><i class="fas fa-bitcoin" style="color:#f7931a;"></i> BTC/USDT</span>
+                            <span class="action buy">BUY</span>
+                        </div>
+                        <div class="signal-details">
+                            <span>Entry <span class="value">$67,420</span></span>
+                            <span>TP <span class="value">$69,800</span></span>
+                            <span>SL <span class="value">$65,100</span></span>
+                            <span>Confidence <span class="value">87%</span></span>
+                        </div>
+                    </div>
+                    <span class="timestamp">2 min ago</span>
+                </div>
+            </div>
+
+            <!-- Typing indicator (hidden by default) -->
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="avatar"><i class="fas fa-ellipsis-h"></i></div>
+                <div class="dot-bounce">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- QUICK ACTION BUTTONS -->
+        <div class="quick-actions" role="group" aria-label="Quick trading actions">
+            <button class="quick-btn btc" data-action="btc" aria-label="Analyze Bitcoin">
+                <i class="fab fa-bitcoin"></i> BTC
+            </button>
+            <button class="quick-btn eth" data-action="eth" aria-label="Analyze Ethereum">
+                <i class="fab fa-ethereum"></i> ETH
+            </button>
+            <button class="quick-btn scan" data-action="scan" aria-label="Scan market opportunities">
+                <i class="fas fa-radar"></i> Scan
+            </button>
+        </div>
+
+        <!-- CHAT INPUT -->
+        <div class="chat-input-area">
+            <div class="input-row">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    placeholder="Type a message or ask about crypto..."
+                    aria-label="Chat message input"
+                    autocomplete="off"
+                    enterkeyhint="send"
+                />
+                <button id="sendButton" aria-label="Send message">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- DOM refs ----------
+            const messagesContainer = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendButton = document.getElementById('sendButton');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const quickBtns = document.querySelectorAll('.quick-btn');
+
+            // ---------- helpers ----------
+            function scrollToBottom() {
+                requestAnimationFrame(() => {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+            }
+
+            function getTimestamp() {
+                const now = new Date();
+                return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // ---------- create message element ----------
+            function createMessage(text, sender = 'user', signalData = null) {
+                const div = document.createElement('div');
+                div.className = `message ${sender}`;
+
+                const avatar = document.createElement('div');
+                avatar.className = 'avatar';
+                if (sender === 'user') {
+                    avatar.innerHTML = '<i class="fas fa-user"></i>';
+                } else {
+                    avatar.innerHTML = '<i class="fas fa-microchip"></i>';
+                }
+
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                // if signalData is provided, render card inside bubble
+                if (signalData && sender === 'bot') {
+                    const signalCard = document.createElement('div');
+                    signalCard.className = 'signal-card';
+                    signalCard.innerHTML = `
+                        <div class="signal-header">
+                            <span class="pair"><i class="fas fa-chart-simple"></i> ${signalData.pair || 'PAIR/USDT'}</span>
+                            <span class="action ${(signalData.action || 'buy').toLowerCase()}">${(signalData.action || 'BUY').toUpperCase()}</span>
+                        </div>
+                        <div class="signal-details">
+                            <span>Entry <span class="value">${signalData.entry || '—'}</span></span>
+                            <span>TP <span class="value">${signalData.tp || '—'}</span></span>
+                            <span>SL <span class="value">${signalData.sl || '—'}</span></span>
+                            <span>Confidence <span class="value">${signalData.confidence || '—'}</span></span>
+                        </div>
+                    `;
+                    bubble.appendChild(signalCard);
+                }
+
+                // text content (if any)
+                if (text) {
+                    const textNode = document.createElement('span');
+                    textNode.textContent = text;
+                    bubble.appendChild(textNode);
+                }
+
+                // timestamp
+                const time = document.createElement('span');
+                time.className = 'timestamp';
+                time.textContent = getTimestamp();
+                bubble.appendChild(time);
+
+                div.appendChild(avatar);
+                div.appendChild(bubble);
+                return div;
+            }
+
+            // ---------- add message to chat ----------
+            function addMessage(text, sender = 'user', signalData = null) {
+                // hide typing indicator when we add a bot message
+                if (sender === 'bot') {
+                    typingIndicator.classList.remove('active');
+                }
+
+                const msgEl = createMessage(text, sender, signalData);
+                // insert before typing indicator (if it's active)
+                if (typingIndicator.classList.contains('active') && sender === 'user') {
+                    messagesContainer.insertBefore(msgEl, typingIndicator);
+                } else {
+                    messagesContainer.appendChild(msgEl);
+                }
+                scrollToBottom();
+            }
+
+            // ---------- simulate bot reply (with optional signal) ----------
+            function simulateBotReply(userText) {
+                typingIndicator.classList.add('active');
+                scrollToBottom();
+
+                // simulate network delay
+                const delay = 800 + Math.random() * 1200;
+
+                setTimeout(() => {
+                    let replyText = '';
+                    let signalData = null;
+
+                    const lower = userText.toLowerCase();
+
+                    if (lower.includes('btc') || lower.includes('bitcoin')) {
+                        replyText = 'BTC/USDT daily structure bullish. Key resistance near $70k.';
+                        signalData = {
+                            pair: 'BTC/USDT',
+                            action: 'buy',
+                            entry: '$67,420',
+                            tp: '$69,800',
+                            sl: '$65,100',
+                            confidence: '87%'
+                        };
+                    } else if (lower.includes('eth') || lower.includes('ethereum')) {
+                        replyText = 'ETH showing accumulation above $3,400. Momentum building.';
+                        signalData = {
+                            pair: 'ETH/USDT',
+                            action: 'buy',
+                            entry: '$3,520',
+                            tp: '$3,780',
+                            sl: '$3,320',
+                            confidence: '82%'
+                        };
+                    } else if (lower.includes('scan') || lower.includes('market')) {
+                        replyText = 'Scan complete · 3 setups detected (BTC, ETH, SOL).';
+                        signalData = {
+                            pair: 'SOL/USDT',
+                            action: 'buy',
+                            entry: '$142.80',
+                            tp: '$158.00',
+                            sl: '$134.20',
+                            confidence: '76%'
+                        };
+                    } else {
+                        replyText = `Analyzing "${userText.slice(0, 60)}"... Multi-timeframe data suggests neutral bias. Use quick actions for signals.`;
+                    }
+
+                    addMessage(replyText, 'bot', signalData);
+                }, delay);
+            }
+
+            // ---------- handle user send ----------
+            function handleSend() {
+                const text = chatInput.value.trim();
+                if (text === '') return;
+
+                // sanitize: strip dangerous tags (basic XSS protection)
+                const sanitized = text.replace(/<[^>]*>/g, '').slice(0, 500);
+                if (sanitized === '') return;
+
+                addMessage(sanitized, 'user');
+                chatInput.value = '';
+                chatInput.focus();
+
+                simulateBotReply(sanitized);
+            }
+
+            // ---------- quick action handler ----------
+            function handleQuickAction(action) {
+                let message = '';
+                switch (action) {
+                    case 'btc':
+                        message = 'Analyze BTC/USDT';
+                        break;
+                    case 'eth':
+                        message = 'Analyze ETH/USDT';
+                        break;
+                    case 'scan':
+                        message = 'Scan market for opportunities';
+                        break;
+                    default:
+                        message = 'Analyze markets';
+                }
+                chatInput.value = message;
+                handleSend();
+            }
+
+            // ---------- event binding ----------
+            sendButton.addEventListener('click', handleSend);
+
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            });
+
+            quickBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const action = this.getAttribute('data-action');
+                    if (action) handleQuickAction(action);
+                });
+            });
+
+            // ---------- initial scroll ----------
+            scrollToBottom();
+
+            // ---------- extra: click on signal card example (demo) ----------
+            // (no extra logic needed, static example is already in HTML)
+
+            console.log('DeepSeek Terminal Chat initialized.');
+        })();
+    </script>
+</body>
+</html>
