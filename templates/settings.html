@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings · CryptoTerminal Pro</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Chart.js (for confidence gauge) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* ===== GLOBAL RESET & DARK THEME ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0b0e14;
+            --bg-secondary: #121820;
+            --bg-card: #1a232e;
+            --bg-card-hover: #1f2a38;
+            --border-color: #2a3748;
+            --text-primary: #e8edf5;
+            --text-secondary: #8b9bb5;
+            --text-muted: #5c6e8c;
+            --accent-cyan: #00e5ff;
+            --accent-green: #00c853;
+            --accent-orange: #ff9100;
+            --accent-red: #ff1744;
+            --slider-track: #2a3748;
+            --slider-fill: #00e5ff;
+            --shadow: 0 8px 32px rgba(0,0,0,0.6);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --transition: 0.2s ease;
+        }
+
+        /* light theme (toggled via JS) */
+        [data-theme="light"] {
+            --bg-primary: #f4f7fc;
+            --bg-secondary: #ffffff;
+            --bg-card: #eef2f7;
+            --bg-card-hover: #e2e8f0;
+            --border-color: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --slider-track: #cbd5e1;
+            --shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        /* ===== LAYOUT ===== */
+        .settings-container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .settings-header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .settings-header h1 i {
+            color: var(--accent-cyan);
+            font-size: 1.8rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.75rem 2rem;
+            margin-bottom: 1.75rem;
+            box-shadow: var(--shadow);
+            transition: background var(--transition), border var(--transition), box-shadow var(--transition);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .card-header h2 i {
+            color: var(--accent-cyan);
+            width: 1.6rem;
+            text-align: center;
+        }
+
+        /* ===== API KEY STATUS ===== */
+        .api-status-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .api-key-item {
+            flex: 1 1 200px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--bg-secondary);
+            padding: 0.9rem 1.2rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .api-key-item .key-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .api-key-item .key-value {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .status-badge.connected {
+            background: rgba(0, 200, 83, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+
+        .status-badge.disconnected {
+            background: rgba(255, 23, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(255, 23, 68, 0.3);
+        }
+
+        .status-badge i {
+            font-size: 0.7rem;
+        }
+
+        /* ===== SLIDER ===== */
+        .slider-group {
+            margin: 1.2rem 0 0.8rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider-label span:last-child {
+            font-family: var(--font-mono);
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 8px;
+            background: var(--slider-track);
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+            border: 2px solid var(--bg-card);
+            transition: 0.15s;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            border: 2px solid var(--bg-card);
+        }
+
+        .slider-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding: 0 0.2rem;
+            margin-top: 0.25rem;
+        }
+
+        /* ===== TOGGLE SWITCH ===== */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toggle-info .toggle-title {
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .toggle-info .toggle-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--slider-track);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-cyan);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+            background: #0b0e14;
+        }
+
+        [data-theme="light"] .toggle-switch input:checked + .toggle-slider::before {
+            background: #ffffff;
+        }
+
+        /* ===== THEME TOGGLE (icon button) ===== */
+        .theme-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: background 0.2s, border 0.2s, transform 0.15s;
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--bg-card-hover);
+            transform: scale(1.05);
+        }
+
+        .theme-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== GAUGE (confidence) ===== */
+        .gauge-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .gauge-chart {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+
+        .gauge-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-mono);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .gauge-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .gauge-labels .label-item {
+            display: flex;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .gauge-labels .label-item .badge {
+            font-weight: 600;
+            min-width: 4rem;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: #0b0e14;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-danger {
+            background: rgba(255, 23, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(255, 23, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 23, 68, 0.25);
+        }
+
+        .btn-sm {
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 700px) {
+            body { padding: 1.2rem; }
+            .card { padding: 1.25rem; }
+            .settings-header h1 { font-size: 1.6rem; }
+            .api-status-grid { flex-direction: column; }
+            .gauge-wrapper { justify-content: center; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .action-bar .btn { justify-content: center; }
+        }
+
+        /* ===== UTILITY ===== */
+        .text-muted { color: var(--text-muted); }
+        .mt-1 { margin-top: 0.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .flex { display: flex; }
+        .gap-1 { gap: 1rem; }
+        .items-center { align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <!-- HEADER -->
+        <header class="settings-header">
+            <h1>
+                <i class="fas fa-cog"></i>
+                Settings
+            </h1>
+            <div class="header-actions">
+                <button class="theme-toggle-btn" id="themeToggle" aria-label="Toggle theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                <a href="/dashboard" class="btn btn-outline btn-sm">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </header>
+
+        <!-- ===== CARD: API KEY STATUS ===== -->
+        <section class="card" id="apiKeyCard">
+            <div class="card-header">
+                <h2><i class="fas fa-key"></i> API Keys & Exchange</h2>
+                <span class="status-badge connected" id="apiOverallStatus">
+                    <i class="fas fa-circle"></i> Connected
+                </span>
+            </div>
+            <div class="api-status-grid">
+                <div class="api-key-item">
+                    <div>
+                        <div class="key-label">Binance API</div>
+                        <div class="key-value" id="binanceKeyDisplay">•••••••••••••aB3x</div>
+                    </div>
+                    <span class="status-badge connected" id="binanceStatus">
+                        <i class="fas fa-check-circle"></i> Live
+                    </span>
+                </div>
+                <div class="api-key-item">
+                    <div>
+                        <div class="key-label">DeepSeek V4</div>
+                        <div class="key-value" id="deepseekKeyDisplay">•••••••••••••F9qZ</div>
+                    </div>
+                    <span class="status-badge connected" id="deepseekStatus">
+                        <i class="fas fa-check-circle"></i> Active
+                    </span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="refreshKeysBtn">
+                    <i class="fas fa-sync-alt"></i> Refresh Status
+                </button>
+            </div>
+            <p class="text-muted mt-1" style="font-size:0.85rem;">
+                <i class="fas fa-info-circle"></i> Keys are stored encrypted. Last verified: <span id="lastVerified">2 min ago</span>
+            </p>
+        </section>
+
+        <!-- ===== CARD: CONFIDENCE THRESHOLD ===== -->
+        <section class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-bullseye"></i> AI Confidence Threshold</h2>
+                <span class="text-muted" style="font-size:0.85rem;">Minimum score for trade signals</span>
+            </div>
+            <div class="gauge-wrapper">
+                <div class="gauge-chart">
+                    <canvas id="confidenceGauge" width="120" height="120"></canvas>
+                    <div class="gauge-value" id="gaugePercent">72%</div>
+                </div>
+                <div class="gauge-labels">
+                    <div class="label-item"><span class="badge" style="color:var(--accent-green);">≥ 80%</span> High conviction</div>
+                    <div class="label-item"><span class="badge" style="color:var(--accent-orange);">50–79%</span> Moderate</div>
+                    <div class="label-item"><span class="badge" style="color:var(--accent-red);">&lt; 50%</span> Low / skip</div>
+                </div>
+            </div>
+            <div class="slider-group">
+                <div class="slider-label">
+                    <span>Threshold</span>
+                    <span id="thresholdValue">72%</span>
+                </div>
+                <input type="range" id="confidenceSlider" min="10" max="95" value="72" step="1">
+                <div class="slider-ticks">
+                    <span>10%</span>
+                    <span>30%</span>
+                    <span>50%</span>
+                    <span>70%</span>
+                    <span>95%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CARD: NOTIFICATION PREFERENCES ===== -->
+        <section class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-bell"></i> Notifications</h2>
+                <span class="text-muted" style="font-size:0.85rem;">Telegram & in-app alerts</span>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-title">Trade Signals</span>
+                    <span class="toggle-desc">Push notification when bot enters a trade</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifTrade" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-title">AI Insights</span>
+                    <span class="toggle-desc">Daily market summary from DeepSeek V4</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifAI" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-title">Error Alerts</span>
+                    <span class="toggle-desc">API failures, connection drops, anomalies</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifError" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-title">Telegram Bot</span>
+                    <span class="toggle-desc">Forward alerts to your Telegram channel</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifTelegram">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </section>
+
+        <!-- ===== CARD: THEME & APPEARANCE ===== -->
+        <section class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-palette"></i> Appearance</h2>
+                <span class="text-muted" style="font-size:0.85rem;">Interface theme</span>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <span class="toggle-title">Dark Mode</span>
+                    <span class="toggle-desc">Switch between dark and light theme</span>
+                </div>
+                <label class="toggle-switch" id="themeToggleSwitch">
+                    <input type="checkbox" id="themeCheckbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <p class="text-muted mt-1" style="font-size:0.85rem;">
+                <i class="fas fa-clock"></i> Theme preference is saved locally.
+            </p>
+        </section>
+
+        <!-- ===== ACTION BAR ===== -->
+        <div class="action-bar">
+            <button class="btn btn-outline" id="resetDefaultsBtn">
+                <i class="fas fa-undo-alt"></i> Reset Defaults
+            </button>
+            <button class="btn btn-primary" id="saveSettingsBtn">
+                <i class="fas fa-check"></i> Save Settings
+            </button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  DOM refs
+            // ============================================================
+            const confidenceSlider = document.getElementById('confidenceSlider');
+            const thresholdValue   = document.getElementById('thresholdValue');
+            const gaugePercent     = document.getElementById('gaugePercent');
+            const themeToggle      = document.getElementById('themeToggle');
+            const themeIcon        = document.getElementById('themeIcon');
+            const themeCheckbox    = document.getElementById('themeCheckbox');
+            const saveBtn          = document.getElementById('saveSettingsBtn');
+            const resetBtn         = document.getElementById('resetDefaultsBtn');
+            const refreshKeysBtn   = document.getElementById('refreshKeysBtn');
+
+            // ============================================================
+            //  Confidence Gauge (Chart.js doughnut)
+            // ============================================================
+            const ctx = document.getElementById('confidenceGauge').getContext('2d');
+            let gaugeChart = null;
+
+            function buildGauge(percent) {
+                const clamped = Math.min(95, Math.max(10, percent));
+                const remaining = 100 - clamped;
+
+                if (gaugeChart) {
+                    gaugeChart.data.datasets[0].data = [clamped, remaining];
+                    gaugeChart.update();
+                    return;
+                }
+
+                gaugeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [clamped, remaining],
+                            backgroundColor: ['#00e5ff', '#1a232e'],
+                            borderWidth: 0,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        cutout: '78%',
+                        responsive: false,
+                        plugins: {
+                            tooltip: { enabled: false },
+                            legend: { display: false }
+                        },
+                        animation: { animateRotate: true }
+                    }
+                });
+            }
+
+            function updateConfidence(value) {
+                const v = parseInt(value, 10);
+                thresholdValue.textContent = v + '%';
+                gaugePercent.textContent = v + '%';
+                if (gaugeChart) {
+                    gaugeChart.data.datasets[0].data = [v, 100 - v];
+                    gaugeChart.update();
+                } else {
+                    buildGauge(v);
+                }
+            }
+
+            // initial
+            buildGauge(parseInt(confidenceSlider.value, 10));
+
+            confidenceSlider.addEventListener('input', function(e) {
+                updateConfidence(e.target.value);
+            });
+
+            // ============================================================
+            //  Theme toggle (button + switch sync)
+            // ============================================================
+            function setTheme(theme) {
+                if (theme === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    themeIcon.className = 'fas fa-sun';
+                    themeCheckbox.checked = false;
+                    localStorage.setItem('cryptoterminal-theme', 'light');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    themeIcon.className = 'fas fa-moon';
+                    themeCheckbox.checked = true;
+                    localStorage.setItem('cryptoterminal-theme', 'dark');
+                }
+            }
+
+            // load saved theme
+            const savedTheme = localStorage.getItem('cryptoterminal-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeToggle.addEventListener('click', function() {
+                const isDark = !document.documentElement.hasAttribute('data-theme') || 
+                               document.documentElement.getAttribute('data-theme') !== 'light';
+                setTheme(isDark ? 'light' : 'dark');
+            });
+
+            themeCheckbox.addEventListener('change', function() {
+                setTheme(this.checked ? 'dark' : 'light');
+            });
+
+            // ============================================================
+            //  Save Settings (simulated)
+            // ============================================================
+            saveBtn.addEventListener('click', function() {
+                const confidence = confidenceSlider.value;
+                const notifTrade = document.getElementById('notifTrade').checked;
+                const notifAI    = document.getElementById('notifAI').checked;
+                const notifError = document.getElementById('notifError').checked;
+                const notifTele  = document.getElementById('notifTelegram').checked;
+                const theme      = document.documentElement.hasAttribute('data-theme') ? 'light' : 'dark';
+
+                // Build payload (simulate POST)
+                const payload = {
+                    confidence_threshold: parseInt(confidence, 10),
+                    notifications: {
+                        trade_signals: notifTrade,
+                        ai_insights: notifAI,
+                        error_alerts: notifError,
+                        telegram: notifTele
+                    },
+                    theme: theme
+                };
+
+                // Simulate API call
+                console.log('[Settings] Saving payload:', payload);
+
+                // Visual feedback
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                saveBtn.disabled = true;
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="fas fa-check"></i> Save Settings';
+                    saveBtn.disabled = false;
+                    // show toast-like feedback (simple alert for demo)
+                    const toast = document.createElement('div');
+                    toast.style.cssText = `
+                        position: fixed; bottom: 2rem; right: 2rem; 
+                        background: var(--accent-green); color: #0b0e14; 
+                        padding: 0.8rem 1.6rem; border-radius: 30px; 
+                        font-weight: 600; box-shadow: 0 4px 20px rgba(0,200,83,0.3);
+                        z-index: 9999; transition: opacity 0.3s;
+                    `;
+                    toast.textContent = '✓ Settings saved successfully';
+                    document.body.appendChild(toast);
+                    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 2500);
+                }, 800);
+            });
+
+            // ============================================================
+            //  Reset defaults
+            // ============================================================
+            resetBtn.addEventListener('click', function() {
+                // Reset confidence to 72
+                confidenceSlider.value = 72;
+                updateConfidence(72);
+
+                // Reset notifications
+                document.getElementById('notifTrade').checked = true;
+                document.getElementById('notifAI').checked = true;
+                document.getElementById('notifError').checked = true;
+                document.getElementById('notifTelegram').checked = false;
+
+                // Reset theme to dark
+                setTheme('dark');
+
+                // visual feedback
+                resetBtn.innerHTML = '<i class="fas fa-check-circle"></i> Reset';
+                setTimeout(() => { resetBtn.innerHTML = '<i class="fas fa-undo-alt"></i> Reset Defaults'; }, 1200);
+            });
+
+            // ============================================================
+            //  Refresh API key status (simulated)
+            // ============================================================
+            refreshKeysBtn.addEventListener('click', function() {
+                refreshKeysBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                refreshKeysBtn.disabled = true;
+
+                // Simulate async check
+                setTimeout(() => {
+                    // Randomize status for demo
+                    const binanceOk = Math.random() > 0.2;
+                    const deepseekOk = Math.random() > 0.2;
+
+                    const binanceBadge = document.getElementById('binanceStatus');
+                    const deepseekBadge = document.getElementById('deepseekStatus');
+                    const overallBadge = document.getElementById('apiOverallStatus');
+
+                    binanceBadge.className = `status-badge ${binanceOk ? 'connected' : 'disconnected'}`;
+                    binanceBadge.innerHTML = binanceOk ? 
+                        '<i class="fas fa-check-circle"></i> Live' : 
+                        '<i class="fas fa-exclamation-triangle"></i> Error';
+
+                    deepseekBadge.className = `status-badge ${deepseekOk ? 'connected' : 'disconnected'}`;
+                    deepseekBadge.innerHTML = deepseekOk ? 
+                        '<i class="fas fa-check-circle"></i> Active' : 
+                        '<i class="fas fa-exclamation-triangle"></i> Inactive';
+
+                    const allOk = binanceOk && deepseekOk;
+                    overallBadge.className = `status-badge ${allOk ? 'connected' : 'disconnected'}`;
+                    overallBadge.innerHTML = allOk ? 
+                        '<i class="fas fa-circle"></i> Connected' : 
+                        '<i class="fas fa-circle"></i> Degraded';
+
+                    document.getElementById('lastVerified').textContent = 'just now';
+
+                    refreshKeysBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Status';
+                    refreshKeysBtn.disabled = false;
+                }, 1200);
+            });
+
+            // ============================================================
+            //  Edge case: slider value out of range (already constrained)
+            // ============================================================
+            // Additional safety: if value is ever NaN, reset
+            confidenceSlider.addEventListener('change', function() {
+                let val = parseInt(this.value, 10);
+                if (isNaN(val) || val < 10) val = 10;
+                if (val > 95) val = 95;
+                this.value = val;
+                updateConfidence(val);
+            });
+
+            // ============================================================
+            //  Keyboard shortcut: Ctrl+S to save
+            // ============================================================
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveBtn.click();
+                }
+            });
+
+            // ============================================================
+            //  Initialisation complete
+            // ============================================================
+            console.log('[Settings] UI initialized.');
+        })();
+    </script>
+</body>
+</html>
