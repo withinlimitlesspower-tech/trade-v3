@@ -1,0 +1,887 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal History | DeepSeek Trading Terminal</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Google Fonts: Inter for modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- Chart.js for win rate chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* ===== CSS Variables (Dark Trading Terminal Theme) ===== */
+        :root {
+            --bg-primary: #0b0e14;
+            --bg-secondary: #131820;
+            --bg-card: #1a212c;
+            --bg-card-hover: #1f2836;
+            --bg-input: #0f141e;
+            --border-color: #2a3342;
+            --border-active: #3b82f6;
+            --text-primary: #e8edf5;
+            --text-secondary: #8892a6;
+            --text-muted: #5a6478;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-yellow: #eab308;
+            --accent-cyan: #06b6d4;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --transition: 0.2s ease;
+        }
+
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ===== Layout ===== */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+        .page-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .page-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .page-header h1 i {
+            color: var(--accent-cyan);
+            font-size: 1.6rem;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== Buttons ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-active);
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        .btn-success {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #16a34a;
+            border-color: #16a34a;
+        }
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== Stats Cards ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px 18px;
+            transition: var(--transition);
+        }
+        .stat-card:hover {
+            border-color: var(--border-active);
+            background: var(--bg-card-hover);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .stat-value.positive { color: var(--accent-green); }
+        .stat-value.negative { color: var(--accent-red); }
+        .stat-value.neutral { color: var(--accent-yellow); }
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== Filters ===== */
+        .filters-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 140px;
+        }
+        .filter-group label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .filter-group select,
+        .filter-group input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: var(--font);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            min-width: 150px;
+        }
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+        .filter-group select option {
+            background: var(--bg-secondary);
+        }
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ===== Table ===== */
+        .table-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        thead {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        th i {
+            margin-left: 6px;
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+        th:hover { color: var(--text-primary); }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+        tr:hover td {
+            background: rgba(59,130,246,0.04);
+        }
+        .signal-pair {
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+        .signal-direction {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .signal-direction.long {
+            background: rgba(34,197,94,0.15);
+            color: var(--accent-green);
+        }
+        .signal-direction.short {
+            background: rgba(239,68,68,0.15);
+            color: var(--accent-red);
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-win { background: rgba(34,197,94,0.2); color: var(--accent-green); }
+        .badge-loss { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+        .badge-pending { background: rgba(234,179,8,0.2); color: var(--accent-yellow); }
+        .badge-open { background: rgba(59,130,246,0.2); color: var(--accent-blue); }
+
+        .text-muted { color: var(--text-muted); }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* ===== Pagination ===== */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px 0 4px;
+        }
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .pagination-buttons {
+            display: flex;
+            gap: 6px;
+        }
+        .pagination-buttons button {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: var(--font);
+            font-weight: 500;
+            transition: var(--transition);
+            min-width: 40px;
+        }
+        .pagination-buttons button:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+        }
+        .pagination-buttons button.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+        .pagination-buttons button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ===== Win Rate Chart ===== */
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 24px;
+            max-width: 500px;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 200px;
+        }
+
+        /* ===== Toast / Notification ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 16px 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 9999;
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            max-width: 400px;
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast i { font-size: 1.4rem; }
+        .toast.success i { color: var(--accent-green); }
+        .toast.error i { color: var(--accent-red); }
+        .toast.info i { color: var(--accent-blue); }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .filters-bar { flex-direction: column; align-items: stretch; }
+            .filter-group { min-width: 100%; }
+            .filter-actions { justify-content: flex-start; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .pagination { flex-direction: column; align-items: flex-start; }
+            .chart-container { max-width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .header-actions .btn { font-size: 0.8rem; padding: 8px 14px; }
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ===== Empty state ===== */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .empty-state h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ===== Page Header ===== -->
+        <header class="page-header">
+            <h1>
+                <i class="fas fa-chart-line"></i>
+                Signal History
+            </h1>
+            <div class="header-actions">
+                <button class="btn btn-success btn-sm" id="exportCsvBtn" title="Export filtered signals as CSV">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </button>
+                <button class="btn btn-primary btn-sm" id="refreshBtn" title="Refresh signal data">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- ===== Win Rate Stats ===== -->
+        <section class="stats-grid" id="statsGrid" aria-label="Signal statistics">
+            <div class="stat-card">
+                <div class="stat-label">Total Signals</div>
+                <div class="stat-value neutral" id="totalSignals">0</div>
+                <div class="stat-sub">all time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Win Rate</div>
+                <div class="stat-value positive" id="winRate">0%</div>
+                <div class="stat-sub">closed signals</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Wins / Losses</div>
+                <div class="stat-value" id="winLossRatio">0 / 0</div>
+                <div class="stat-sub">closed only</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Signals</div>
+                <div class="stat-value neutral" id="openSignals">0</div>
+                <div class="stat-sub">currently active</div>
+            </div>
+        </section>
+
+        <!-- ===== Win Rate Chart (Doughnut) ===== -->
+        <div class="chart-container" id="chartContainer">
+            <canvas id="winRateChart" width="400" height="200" aria-label="Win rate doughnut chart"></canvas>
+        </div>
+
+        <!-- ===== Filters ===== -->
+        <section class="filters-bar" aria-label="Signal filters">
+            <div class="filter-group">
+                <label for="filterPair">Trading Pair</label>
+                <select id="filterPair">
+                    <option value="">All Pairs</option>
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                    <option value="DOGEUSDT">DOGE/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterDirection">Direction</label>
+                <select id="filterDirection">
+                    <option value="">All</option>
+                    <option value="long">Long</option>
+                    <option value="short">Short</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterStatus">Status</label>
+                <select id="filterStatus">
+                    <option value="">All</option>
+                    <option value="win">Win</option>
+                    <option value="loss">Loss</option>
+                    <option value="open">Open</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterDateFrom">From</label>
+                <input type="date" id="filterDateFrom">
+            </div>
+            <div class="filter-group">
+                <label for="filterDateTo">To</label>
+                <input type="date" id="filterDateTo">
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary btn-sm" id="applyFiltersBtn"><i class="fas fa-filter"></i> Apply</button>
+                <button class="btn btn-sm" id="clearFiltersBtn"><i class="fas fa-times"></i> Clear</button>
+            </div>
+        </section>
+
+        <!-- ===== Signal Table ===== -->
+        <div class="table-wrapper">
+            <table id="signalTable">
+                <thead>
+                    <tr>
+                        <th data-sort="pair">Pair <i class="fas fa-sort"></i></th>
+                        <th data-sort="direction">Direction <i class="fas fa-sort"></i></th>
+                        <th data-sort="entry">Entry Price <i class="fas fa-sort"></i></th>
+                        <th data-sort="exit">Exit Price <i class="fas fa-sort"></i></th>
+                        <th data-sort="pnl">PnL % <i class="fas fa-sort"></i></th>
+                        <th data-sort="status">Status <i class="fas fa-sort"></i></th>
+                        <th data-sort="timeframe">Timeframe <i class="fas fa-sort"></i></th>
+                        <th data-sort="date">Date <i class="fas fa-sort"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Dynamic rows inserted by JavaScript -->
+                </tbody>
+            </table>
+            <div id="emptyState" class="empty-state" style="display:none;">
+                <i class="fas fa-inbox"></i>
+                <h3>No signals found</h3>
+                <p>Try adjusting your filters or date range.</p>
+            </div>
+        </div>
+
+        <!-- ===== Pagination ===== -->
+        <div class="pagination" id="paginationControls">
+            <div class="pagination-info" id="paginationInfo">Showing 0–0 of 0 signals</div>
+            <div class="pagination-buttons" id="paginationButtons">
+                <button id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i></button>
+                <span id="pageNumbers"></span>
+                <button id="nextPageBtn" disabled><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast Notification ===== -->
+    <div id="toast" class="toast" role="alert" aria-live="polite">
+        <i class="fas fa-info-circle"></i>
+        <span id="toastMessage">Ready</span>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  MOCK DATA (simulates backend API response)
+            //  In production, replace with actual fetch() calls.
+            // ============================================================
+            const MOCK_SIGNALS = (() => {
+                const pairs = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','ADAUSDT','DOGEUSDT','XRPUSDT'];
+                const directions = ['long','short'];
+                const statuses = ['win','loss','open','pending'];
+                const timeframes = ['1h','4h','1d','15m','30m'];
+                const signals = [];
+                const now = Date.now();
+                for (let i = 0; i < 87; i++) {
+                    const pair = pairs[Math.floor(Math.random() * pairs.length)];
+                    const direction = directions[Math.floor(Math.random() * directions.length)];
+                    const status = statuses[Math.floor(Math.random() * statuses.length)];
+                    const entry = (Math.random() * 50000 + 100).toFixed(2);
+                    let exit = '—';
+                    let pnl = null;
+                    if (status === 'win') {
+                        exit = (parseFloat(entry) * (1 + (Math.random() * 0.15 + 0.01))).toFixed(2);
+                        pnl = ((parseFloat(exit) - parseFloat(entry)) / parseFloat(entry) * 100).toFixed(2);
+                        if (direction === 'short') pnl = (parseFloat(pnl) * -1).toFixed(2);
+                    } else if (status === 'loss') {
+                        exit = (parseFloat(entry) * (1 - (Math.random() * 0.12 + 0.01))).toFixed(2);
+                        pnl = ((parseFloat(exit) - parseFloat(entry)) / parseFloat(entry) * 100).toFixed(2);
+                        if (direction === 'short') pnl = (parseFloat(pnl) * -1).toFixed(2);
+                    } else if (status === 'open') {
+                        exit = '—';
+                        pnl = ((Math.random() * 6 - 3)).toFixed(2);
+                    } else {
+                        exit = '—';
+                        pnl = null;
+                    }
+                    const date = new Date(now - Math.random() * 30 * 24 * 60 * 60 * 1000);
+                    signals.push({
+                        id: i + 1,
+                        pair: pair,
+                        direction: direction,
+                        entry: entry,
+                        exit: exit,
+                        pnl: pnl,
+                        status: status,
+                        timeframe: timeframes[Math.floor(Math.random() * timeframes.length)],
+                        date: date.toISOString().slice(0,10) + ' ' + date.toTimeString().slice(0,5),
+                        timestamp: date.getTime()
+                    });
+                }
+                // sort by date descending
+                signals.sort((a,b) => b.timestamp - a.timestamp);
+                return signals;
+            })();
+
+            // ============================================================
+            //  STATE
+            // ============================================================
+            let allSignals = [...MOCK_SIGNALS];
+            let filteredSignals = [...allSignals];
+            let currentPage = 1;
+            const pageSize = 12;
+            let sortKey = 'date';
+            let sortAsc = false; // newest first
+
+            // DOM refs
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const paginationInfo = document.getElementById('paginationInfo');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const pageNumbersSpan = document.getElementById('pageNumbers');
+            const totalSignalsEl = document.getElementById('totalSignals');
+            const winRateEl = document.getElementById('winRate');
+            const winLossRatioEl = document.getElementById('winLossRatio');
+            const openSignalsEl = document.getElementById('openSignals');
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            // Chart instance
+            let winRateChart = null;
+
+            // ============================================================
+            //  UTILITY FUNCTIONS
+            // ============================================================
+            function sanitize(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function showToast(message, type = 'info') {
+                toast.className = 'toast show ' + type;
+                toastMessage.textContent = message;
+                const icon = toast.querySelector('i');
+                icon.className = 'fas ' + (type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3500);
+            }
+
+            // ============================================================
+            //  FILTERING
+            // ============================================================
+            function applyFilters() {
+                const pair = document.getElementById('filterPair').value.trim().toUpperCase();
+                const direction = document.getElementById('filterDirection').value;
+                const status = document.getElementById('filterStatus').value;
+                const dateFrom = document.getElementById('filterDateFrom').value;
+                const dateTo = document.getElementById('filterDateTo').value;
+
+                filteredSignals = allSignals.filter(s => {
+                    if (pair && s.pair !== pair) return false;
+                    if (direction && s.direction !== direction) return false;
+                    if (status && s.status !== status) return false;
+                    if (dateFrom) {
+                        const d = s.date.split(' ')[0];
+                        if (d < dateFrom) return false;
+                    }
+                    if (dateTo) {
+                        const d = s.date.split(' ')[0];
+                        if (d > dateTo) return false;
+                    }
+                    return true;
+                });
+
+                // sort
+                sortSignals();
+                currentPage = 1;
+                renderTable();
+                updateStats();
+                updatePagination();
+                updateChart();
+                showToast(`Filtered: ${filteredSignals.length} signals`, 'info');
+            }
+
+            function clearFilters() {
+                document.getElementById('filterPair').value = '';
+                document.getElementById('filterDirection').value = '';
+                document.getElementById('filterStatus').value = '';
+                document.getElementById('filterDateFrom').value = '';
+                document.getElementById('filterDateTo').value = '';
+                applyFilters();
+            }
+
+            // ============================================================
+            //  SORTING
+            // ============================================================
+            function sortSignals() {
+                filteredSignals.sort((a, b) => {
+                    let valA, valB;
+                    switch (sortKey) {
+                        case 'pair': valA = a.pair; valB = b.pair; break;
+                        case 'direction': valA = a.direction; valB = b.direction; break;
+                        case 'entry': valA = parseFloat(a.entry) || 0; valB = parseFloat(b.entry) || 0; break;
+                        case 'exit': valA = a.exit === '—' ? -Infinity : parseFloat(a.exit); valB = b.exit === '—' ? -Infinity : parseFloat(b.exit); break;
+                        case 'pnl': valA = a.pnl === null ? -Infinity : parseFloat(a.pnl); valB = b.pnl === null ? -Infinity : parseFloat(b.pnl); break;
+                        case 'status': valA = a.status; valB = b.status; break;
+                        case 'timeframe': valA = a.timeframe; valB = b.timeframe; break;
+                        case 'date': valA = a.timestamp; valB = b.timestamp; break;
+                        default: valA = a.timestamp; valB = b.timestamp;
+                    }
+                    if (typeof valA === 'string') {
+                        return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    }
+                    return sortAsc ? valA - valB : valB - valA;
+                });
+            }
+
+            // ============================================================
+            //  RENDER TABLE
+            // ============================================================
+            function renderTable() {
+                const start = (currentPage - 1) * pageSize;
+                const end = Math.min(start + pageSize, filteredSignals.length);
+                const pageData = filteredSignals.slice(start, end);
+
+                if (pageData.length === 0) {
+                    tableBody.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                emptyState.style.display = 'none';
+
+                let html = '';
+                pageData.forEach(s => {
+                    const directionClass = s.direction === 'long' ? 'long' : 'short';
+                    const directionIcon = s.direction === 'long' ? 'fa-arrow-up' : 'fa-arrow-down';
+                    let statusBadge = '';
+                    let pnlDisplay = '—';
+                    let pnlClass = 'text-muted';
+                    if (s.status === 'win') {
+                        statusBadge = '<span class="badge badge-win">Win</span>';
+                        pnlDisplay = (s.pnl !== null ? s.pnl : '0') + '%';
+                        pnlClass = 'positive';
+                    } else if (s.status === 'loss') {
+                        statusBadge = '<span class="badge badge-loss">Loss</span>';
+                        pnlDisplay = (s.pnl !== null ? s.pnl : '0') + '%';
+                        pnlClass = 'negative';
+                    } else if (s.status === 'open') {
+                        statusBadge = '<span class="badge badge-open">Open</span>';
+                        pnlDisplay = (s.pnl !== null ? s.pnl : '0') + '%';
+                        pnlClass = 'neutral';
+                    } else {
+                        statusBadge = '<span class="badge badge-pending">Pending</span>';
+                        pnlDisplay = '—';
+                    }
+
+                    html += `<tr>
+                        <td><span class="signal-pair">${sanitize(s.pair)}</span></td>
+                        <td><span class="signal-direction ${directionClass}"><i class="fas ${directionIcon}"></i> ${sanitize(s.direction)}</span></td>
+                        <td>${sanitize(s.entry)}</td>
+                        <td>${sanitize(s.exit)}</td>
+                        <td class="${pnlClass}">${pnlDisplay}</td>
+                        <td>${statusBadge}</td>
+                        <td>${sanitize(s.timeframe)}</td>
+                        <td>${sanitize(s.date)}</td>
+                    </tr>`;
+                });
+                tableBody.innerHTML = html;
+            }
+
+            // ============================================================
+            //  STATS
+            // ============================================================
+            function updateStats() {
+                const total = filteredSignals.length;
+                const closed = filteredSignals.filter(s => s.status === 'win' || s.status === 'loss');
+                const wins = closed.filter(s => s.status === 'win').length;
+                const losses = closed.filter(s => s.status === 'loss').length;
+                const open = filteredSignals.filter(s => s.status === 'open').length;
+                const winRate = closed.length > 0 ? ((wins / closed.length) * 100).toFixed(1) : 0;
+
+                totalSignalsEl.textContent = total;
+                winRateEl.textContent = winRate + '%';
+                winLossRatioEl.textContent = wins + ' / ' + losses;
+                openSignalsEl.textContent = open;
+            }
+
+            // ============================================================
+            //  CHART
+            // ============================================================
+            function updateChart() {
+                const closed = filteredSignals.filter(s => s.status === 'win' || s.status === 'loss');
+                const wins = closed.filter(s => s.status === 'win').length;
+                const losses = closed.filter(s => s.status === 'loss').length;
+                const ctx = document.getElementById('winRateChart').getContext('2d');
+
+                if (winRateChart) {
+                    winRateChart.destroy();
+                }
+
+                if (wins + losses === 0) {
+                    // no data: show placeholder
+                    winRateChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['No Data'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#2a3342'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { enabled: false }
+                            }
+                        }
+                    });
+                    return;
+                }
+
+                winRateChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Wins', 'Losses'],
+                        datasets: [{
+                            data: [wins, losses],
+                            backgroundColor: ['#22c55e', '#ef4444'],
+                            borderColor: '#131820',
+                            borderWidth: 3,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '65%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#8892a6',
+                                    font: { family: 'Inter', size: 12 },
+                                    padding: 16,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#1a212c',
+                                titleColor: '#e
