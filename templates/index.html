@@ -1,0 +1,702 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepTrade Terminal — Crypto AI Trading Bot</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ===== CSS Reset & Base ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg-primary: #0b0e14;
+            --bg-secondary: #131820;
+            --bg-card: #1a212c;
+            --bg-sidebar: #0f141c;
+            --bg-hover: #232d3b;
+            --border-color: #2a3442;
+            --text-primary: #e8edf5;
+            --text-secondary: #8a9bb5;
+            --text-muted: #5a6b82;
+            --accent-green: #00d4aa;
+            --accent-red: #f84960;
+            --accent-blue: #4a9eff;
+            --accent-purple: #b388ff;
+            --accent-yellow: #f5a623;
+            --shadow-card: 0 8px 24px rgba(0,0,0,0.6);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --transition: 0.2s ease;
+        }
+        html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { opacity: 0.8; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ===== Layout ===== */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ===== Sidebar ===== */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 20px 18px 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-header .logo-icon {
+            font-size: 24px;
+            color: var(--accent-green);
+        }
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .sidebar-header .version {
+            font-size: 10px;
+            background: var(--bg-hover);
+            padding: 2px 8px;
+            border-radius: 20px;
+            color: var(--text-muted);
+            margin-left: auto;
+            font-weight: 500;
+            -webkit-text-fill-color: var(--text-muted);
+        }
+
+        .nav-section {
+            padding: 16px 12px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+        .nav-list {
+            list-style: none;
+            padding: 0 8px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition);
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .nav-item i { width: 20px; text-align: center; font-size: 16px; }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .nav-item.active {
+            background: rgba(74, 158, 255, 0.12);
+            color: var(--accent-blue);
+            border-left: 3px solid var(--accent-blue);
+        }
+        .nav-item .badge {
+            margin-left: auto;
+            background: var(--accent-red);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 18px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .sidebar-footer .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+        }
+        .sidebar-footer .status-text { font-weight: 500; }
+
+        /* ===== Main Content ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+
+        /* top bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            min-height: 56px;
+        }
+        .top-bar .page-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .top-bar .page-title i { margin-right: 8px; color: var(--accent-blue); }
+        .top-bar .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+        .btn-primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+        .btn-primary:hover { background: #3b8bef; border-color: #3b8bef; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn-icon { padding: 8px 10px; }
+
+        /* ===== Page Container (multi-page) ===== */
+        .page-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* ===== Chat Page ===== */
+        .chat-layout {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 120px);
+        }
+        .chat-list-panel {
+            width: 280px;
+            min-width: 240px;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 16px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+        .chat-list-panel .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .chat-list-panel .panel-header h3 { font-size: 14px; font-weight: 600; }
+        .chat-item {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: background var(--transition);
+            border-left: 3px solid transparent;
+        }
+        .chat-item:hover { background: var(--bg-hover); }
+        .chat-item.active { border-left-color: var(--accent-blue); background: rgba(74,158,255,0.08); }
+        .chat-item .chat-name { font-weight: 500; font-size: 13px; }
+        .chat-item .chat-preview { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-item .chat-time { font-size: 11px; color: var(--text-muted); text-align: right; }
+
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .message.user {
+            align-self: flex-end;
+            background: var(--accent-blue);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.assistant {
+            align-self: flex-start;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
+        }
+        .message .msg-time { font-size: 10px; opacity: 0.6; margin-top: 6px; display: block; }
+        .chat-input-area {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+        .chat-input-area input {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 10px 18px;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            outline: none;
+            transition: border var(--transition);
+        }
+        .chat-input-area input:focus { border-color: var(--accent-blue); }
+        .chat-input-area input::placeholder { color: var(--text-muted); }
+
+        /* ===== Scanner Page ===== */
+        .scanner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .signal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 18px;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: var(--shadow-card);
+        }
+        .signal-card:hover { transform: translateY(-2px); border-color: var(--text-muted); }
+        .signal-card .symbol {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+        .signal-card .signal-type {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+        .signal-type.buy { background: rgba(0,212,170,0.15); color: var(--accent-green); }
+        .signal-type.sell { background: rgba(248,73,96,0.15); color: var(--accent-red); }
+        .signal-card .price { font-size: 20px; font-weight: 600; margin: 8px 0 4px; font-family: var(--font-mono); }
+        .signal-card .details { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-top: 10px; }
+        .signal-card .details span { display: flex; align-items: center; gap: 4px; }
+        .signal-card .tf-badges { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0 4px; }
+        .tf-badge {
+            background: var(--bg-hover);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .tf-badge.active { background: rgba(74,158,255,0.15); color: var(--accent-blue); }
+
+        /* ===== History Page ===== */
+        .history-table-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg-hover); }
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-badge.won { background: rgba(0,212,170,0.15); color: var(--accent-green); }
+        .status-badge.lost { background: rgba(248,73,96,0.15); color: var(--accent-red); }
+        .status-badge.pending { background: rgba(245,166,35,0.15); color: var(--accent-yellow); }
+
+        /* ===== Settings Page ===== */
+        .settings-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+        }
+        .settings-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row label { font-weight: 500; }
+        .settings-row .desc { font-size: 12px; color: var(--text-muted); }
+        .settings-row select, .settings-row input[type="text"], .settings-row input[type="number"] {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            width: 200px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle-switch.active { background: var(--accent-blue); }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .toggle-switch.active::after { transform: translateX(20px); }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 900px) {
+            .sidebar { width: 64px; min-width: 64px; }
+            .sidebar-header h1, .sidebar-header .version, .nav-item span, .nav-section, .sidebar-footer .status-text { display: none; }
+            .sidebar-header { justify-content: center; padding: 16px 0; }
+            .nav-item { justify-content: center; padding: 12px 0; }
+            .nav-item i { margin: 0; }
+            .sidebar-footer { justify-content: center; }
+            .chat-layout { flex-direction: column; height: auto; }
+            .chat-list-panel { width: 100%; max-height: 200px; }
+            .top-bar { padding: 10px 16px; }
+            .page-container { padding: 16px; }
+        }
+        @media (max-width: 600px) {
+            .scanner-grid { grid-template-columns: 1fr; }
+            .settings-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .settings-row select, .settings-row input { width: 100%; }
+        }
+
+        /* ===== Utility ===== */
+        .text-green { color: var(--accent-green); }
+        .text-red { color: var(--accent-red); }
+        .text-muted { color: var(--text-muted); }
+        .flex { display: flex; }
+        .gap-2 { gap: 8px; }
+        .items-center { align-items: center; }
+        .mt-2 { margin-top: 8px; }
+        .mb-2 { margin-bottom: 8px; }
+        .w-full { width: 100%; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <i class="fas fa-robot logo-icon"></i>
+            <h1>DeepTrade</h1>
+            <span class="version">v4.2</span>
+        </div>
+        <div class="nav-section">Interface</div>
+        <ul class="nav-list">
+            <li class="nav-item active" data-page="chat" tabindex="0" role="button" aria-label="Chat">
+                <i class="fas fa-comment-dots"></i><span>Chat</span>
+            </li>
+            <li class="nav-item" data-page="scanner" tabindex="0" role="button" aria-label="Live Scanner">
+                <i class="fas fa-chart-line"></i><span>Live Scanner</span><span class="badge">12</span>
+            </li>
+            <li class="nav-item" data-page="history" tabindex="0" role="button" aria-label="Signal History">
+                <i class="fas fa-clock-rotate-left"></i><span>History</span>
+            </li>
+            <li class="nav-item" data-page="settings" tabindex="0" role="button" aria-label="Settings">
+                <i class="fas fa-sliders"></i><span>Settings</span>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <span class="status-dot"></span>
+            <span class="status-text">AI Online · Binance</span>
+        </div>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="page-title"><i class="fas fa-comment-dots"></i><span id="pageTitle">Chat</span></div>
+            <div class="actions">
+                <button class="btn btn-sm" id="refreshBtn" aria-label="Refresh data"><i class="fas fa-rotate"></i> Refresh</button>
+                <button class="btn btn-sm btn-primary" id="newSignalBtn"><i class="fas fa-plus"></i> New Signal</button>
+            </div>
+        </header>
+
+        <!-- Page Container -->
+        <div class="page-container">
+            <!-- CHAT PAGE -->
+            <section class="page active" id="page-chat" aria-label="Chat interface">
+                <div class="chat-layout">
+                    <div class="chat-list-panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-message"></i> Conversations</h3>
+                            <button class="btn btn-sm btn-icon" aria-label="New chat"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="chat-item active">
+                            <div class="chat-name">BTC/USDT Analysis</div>
+                            <div class="chat-preview">DeepSeek: Bullish flag on 4h...</div>
+                            <div class="chat-time">2m ago</div>
+                        </div>
+                        <div class="chat-item">
+                            <div class="chat-name">ETH Portfolio</div>
+                            <div class="chat-preview">Show me support levels for ETH</div>
+                            <div class="chat-time">15m ago</div>
+                        </div>
+                        <div class="chat-item">
+                            <div class="chat-name">Scanner Alerts</div>
+                            <div class="chat-preview">3 new signals on BNB, SOL, ADA</div>
+                            <div class="chat-time">1h ago</div>
+                        </div>
+                        <div class="chat-item">
+                            <div class="chat-name">Risk Management</div>
+                            <div class="chat-preview">Set stop loss at 5% for all positions</div>
+                            <div class="chat-time">3h ago</div>
+                        </div>
+                    </div>
+                    <div class="chat-main">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message assistant">
+                                <strong>DeepSeek V4</strong> — I'm analyzing BTC/USDT with multi-timeframe data. Bullish divergence on RSI (1h, 4h). Key resistance at $68,200. <span class="msg-time">11:32 AM</span>
+                            </div>
+                            <div class="message user">
+                                What about ETH? <span class="msg-time">11:33 AM</span>
+                            </div>
+                            <div class="message assistant">
+                                ETH/USDT: support at $3,420, resistance $3,580. Volume increasing on 15m. Awaiting breakout confirmation. <span class="msg-time">11:34 AM</span>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chatInput" placeholder="Ask DeepSeek about markets, signals, or analysis..." aria-label="Chat input">
+                            <button class="btn btn-primary btn-icon" id="sendMsgBtn" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCANNER PAGE -->
+            <section class="page" id="page-scanner" aria-label="Live scanner">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h2 style="font-size: 18px; font-weight: 600;"><i class="fas fa-satellite-dish text-green"></i> Live Multi-Timeframe Scanner</h2>
+                    <span class="text-muted" style="font-size: 13px;"><i class="fas fa-circle text-green" style="font-size: 8px;"></i> Streaming Binance</span>
+                </div>
+                <div class="scanner-grid" id="scannerGrid">
+                    <!-- Signal cards will be populated by JS -->
+                    <div class="signal-card">
+                        <div><span class="symbol">BTC/USDT</span><span class="signal-type buy">BUY</span></div>
+                        <div class="price">$68,142</div>
+                        <div class="tf-badges"><span class="tf-badge active">1h</span><span class="tf-badge active">4h</span><span class="tf-badge">1d</span></div>
+                        <div class="details"><span><i class="fas fa-arrow-up text-green"></i> +2.4%</span><span>RSI: 62</span><span>Vol: 2.1B</span></div>
+                    </div>
+                    <div class="signal-card">
+                        <div><span class="symbol">ETH/USDT</span><span class="signal-type buy">BUY</span></div>
+                        <div class="price">$3,487</div>
+                        <div class="tf-badges"><span class="tf-badge active">15m</span><span class="tf-badge active">1h</span><span class="tf-badge">4h</span></div>
+                        <div class="details"><span><i class="fas fa-arrow-up text-green"></i> +1.8%</span><span>MACD bullish</span><span>Vol: 980M</span></div>
+                    </div>
+                    <div class="signal-card">
+                        <div><span class="symbol">SOL/USDT</span><span class="signal-type sell">SELL</span></div>
+                        <div class="price">$142.30</div>
+                        <div class="tf-badges"><span class="tf-badge active">1h</span><span class="tf-badge">4h</span><span class="tf-badge active">1d</span></div>
+                        <div class="details"><span><i class="fas fa-arrow-down text-red"></i> -3.2%</span><span>Resistance</span><span>Vol: 420M</span></div>
+                    </div>
+                    <div class="signal-card">
+                        <div><span class="symbol">BNB/USDT</span><span class="signal-type buy">BUY</span></div>
+                        <div class="price">$612.80</div>
+                        <div class="tf-badges"><span class="tf-badge active">30m</span><span class="tf-badge active">1h</span><span class="tf-badge">2h</span></div>
+                        <div class="details"><span><i class="fas fa-arrow-up text-green"></i> +0.9%</span><span>Support bounce</span><span>Vol: 310M</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HISTORY PAGE -->
+            <section class="page" id="page-history" aria-label="Signal history">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h2 style="font-size: 18px; font-weight: 600;"><i class="fas fa-table-list"></i> Signal History</h2>
+                    <button class="btn btn-sm"><i class="fas fa-download"></i> Export CSV</button>
+                </div>
+                <div class="history-table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Symbol</th><th>Signal</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Timeframe</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>BTC/USDT</td><td class="text-green">BUY</td><td>$67,200</td><td>$68,900</td><td class="text-green">+2.53%</td><td>4h</td><td><span class="status-badge won">Won</span></td></tr>
+                            <tr><td>ETH/USDT</td><td class="text-red">SELL</td><td>$3,520</td><td>$3,410</td><td class="text-green">+3.12%</td><td>1h</td><td><span class="status-badge won">Won</span></td></tr>
+                            <tr><td>SOL/USDT</td><td class="text-green">BUY</td><td>$138.10</td><td>$135.20</td><td class="text-red">-2.10%</td><td>30m</td><td><span class="status-badge lost">Lost</span></td></tr>
+                            <tr><td>ADA/USDT</td><td class="text-green">BUY</td><td>$0.452</td><td>$0.478</td><td class="text-green">+5.75%</td><td>1d</td><td><span class="status-badge won">Won</span></td></tr>
+                            <tr><td>BNB/USDT</td><td class="text-red">SELL</td><td>$625.00</td><td>$618.00</td><td class="text-green">+1.12%</td><td>2h</td><td><span class="status-badge pending">Pending</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SETTINGS PAGE -->
+            <section class="page" id="page-settings" aria-label="Settings">
+                <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;"><i class="fas fa-gear"></i> Terminal Settings</h2>
+                <div class="settings-section">
+                    <h3><i class="fas fa-robot"></i> AI & Data</h3>
+                    <div class="settings-row">
+                        <div><label>DeepSeek Model</label><div class="desc">V4 turbo or standard</div></div>
+                        <select><option>DeepSeek V4 Turbo</option><option>DeepSeek V4 Standard</option></select>
+                    </div>
+                    <div class="settings-row">
+                        <div><label>Binance API Key</label><div class="desc">Connected</div></div>
+                        <input type="text" value="••••••••••••••••" readonly style="width:180px;">
+                    </div>
+                    <div class="settings-row">
+                        <div><label>Multi-timeframe Analysis</label><div class="desc">Enable automatic TF aggregation</div></div>
+                        <div class="toggle-switch active" role="button" tabindex="0" aria-label="Toggle multi-timeframe"></div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3><i class="fas fa-bell"></i> Alerts & Scanner</h3>
+                    <div class="settings-row">
+                        <div><label>Signal notifications</label><div class="desc">Push for new buy/sell signals</div></div>
+                        <div class="toggle-switch active" role="button" tabindex="0"></div>
+                    </div>
+                    <div class="settings-row">
+                        <div><label>Scanner refresh interval</label><div class="desc">Seconds between scans</div></div>
+                        <select><option>5s</option><option selected>10s</option><option>30s</option><option>60s</option></select>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3><i class="fas fa-palette"></i> Appearance</h3>
+                    <div class="settings-row">
+                        <div><label>Theme</label><div class="desc">Dark terminal (default)</div></div>
+                        <select><option selected>Dark Terminal</option><option>Midnight Blue</option><option>Matrix Green</option></select>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ===== Navigation / Multi-page =====
+        const navItems = document.querySelectorAll('.nav-item[data-page]');
+        const pages = document.querySelectorAll('.page');
+        const pageTitleSpan = document.getElementById('pageTitle');
+
+        function activatePage(pageId) {
+            // Deactivate all nav items and pages
+            navItems.forEach(item => item.classList.remove('active'));
+            pages.forEach(p => p.classList.remove('active'));
+
+            // Activate target
+            const targetNav = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetNav) targetNav.classList.add('active');
+            if (targetPage) targetPage.classList.add('active');
+
+            // Update top bar title
+            const names = { chat: 'Chat', scanner: 'Live Scanner', history: 'Signal History', settings: 'Settings' };
+            pageTitleSpan.textContent = names[pageId] || 'Chat';
+            // Update icon
+            const icons = { chat: 'fa-comment-dots', scanner: 'fa-chart-line', history: 'fa-clock-rotate-left', settings: 'fa-sliders' };
+            const iconEl = document.querySelector('.top-bar .page-title i');
+            if (iconEl) {
+                iconEl.className = `fas ${icons[pageId] || 'fa-comment-dots
